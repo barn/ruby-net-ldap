@@ -46,7 +46,7 @@ class Net::LDAP::Connection #:nodoc:
     # If we've been given a cafile in the arguments hash, then we want to
     # actually verify the TLS connection rather than just the default of
     # NO_VERIFY.
-    if args.last.instance_of?(Hash) && args.last.has_key?(:cafile)
+    if !args.nil? && args.last.instance_of?(Hash) && args.last.has_key?(:cafile)
         cafile = args.last[:cafile]
         ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
         raise "CA file '#{cafile}' doesn't exist" unless File.exists? cafile
@@ -109,10 +109,15 @@ class Net::LDAP::Connection #:nodoc:
         raise Net::LDAP::LdapError, "no start_tls result"
       end
 
+      a = nil
       a = { :cafile => args[:cafile] } if args[:cafile]
 
       if pdu.result_code.zero?
-        @conn = self.class.wrap_with_ssl(@conn,a)
+        if a.nil?
+          @conn = self.class.wrap_with_ssl(@conn)
+        else
+          @conn = self.class.wrap_with_ssl(@conn,a)
+        end
       else
         raise Net::LDAP::LdapError, "start_tls failed: #{pdu.result_code}"
       end
